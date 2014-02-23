@@ -24,7 +24,7 @@ namespace server
 
         private volatile List<TcpClient> clients;
 
-        private int port = 3000;
+        private const int port = 3000;
 
         static void Main(string[] args)
         {
@@ -36,6 +36,8 @@ namespace server
             while (input != "exit")
                 input = Console.ReadLine();
             server.stop();
+            Thread.Sleep(1000);
+            Console.WriteLine("press enter to continue...");
             Console.ReadLine();
         }
 
@@ -89,7 +91,7 @@ namespace server
                 {
                     TcpClient client = listener.AcceptTcpClient();
 
-                    Console.WriteLine("client connected");
+                    Console.Write("client connected with endpoint: ");
                     Console.WriteLine(client.Client.RemoteEndPoint.ToString());
 
                     clients.Add(client);
@@ -166,19 +168,23 @@ namespace server
 
             NetworkStream clientStream = client.GetStream();
 
-            byte[] message = new byte[4096];
+            byte[] received = new byte[4096];
             int bytesRead;
             
             try
             {
                 while (true)
                 {
-                    bytesRead = clientStream.Read(message, 0, message.Length);
+                    bytesRead = clientStream.Read(received, 0, received.Length);
 
                     if (bytesRead == 0) break;
 
                     Console.WriteLine("received client message");
                     Console.WriteLine("message length: " + bytesRead.ToString());
+
+                    byte[] message = new byte[bytesRead];
+
+                    Array.Copy(received, message, bytesRead);
 
                     msgQueue.Enqueue(interpret(message, client));
 
@@ -207,14 +213,15 @@ namespace server
         {
             byte command = message[0];
             TcpClient receiver = null;
-            byte[] temp = new byte[4096];
-            int length = 0;
+            byte[] temp;
             switch (command)
             {
                 case Commands.BroadcastMessage:
+                    temp = new byte[message.Length - 1];
                     Array.Copy(message, 1, temp, 0, message.Length - 1);
                     break;
                 case Commands.SpecificMessage:
+                    temp = new byte[message.Length - 5];
                     Array.Copy(message, 5, temp, 0, message.Length - 5);
                     byte[] address = new byte[4];
                     Array.Copy(message, 1, address, 0, 4);
