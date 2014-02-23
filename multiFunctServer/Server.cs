@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
+using System.Linq;
+using serverExternals;
 
 namespace server
 {
@@ -88,7 +90,7 @@ namespace server
                     TcpClient client = listener.AcceptTcpClient();
 
                     Console.WriteLine("client connected");
-                    Console.WriteLine(client.Client.RemoteEndPoint);
+                    Console.WriteLine(client.Client.RemoteEndPoint.ToString());
 
                     clients.Add(client);
 
@@ -127,6 +129,7 @@ namespace server
                         NetworkStream stream;
                         if (msg.To == null)
                         {
+                            Console.WriteLine("sending message to all clients");
                             foreach (TcpClient client in clients)
                             {
                                 stream = client.GetStream();
@@ -135,6 +138,7 @@ namespace server
                         }
                         else
                         {
+                            Console.WriteLine("sending message to client with ip: " + msg.To.Client.RemoteEndPoint);
                             stream = msg.To.GetStream();
                             stream.Write(msg.Body, 0, msg.Body.Length);
                         }
@@ -145,7 +149,7 @@ namespace server
             {
                 Console.WriteLine("send thread aborting, closing all connections...");
             }
-            catch (Exception e)
+            catch (SocketException e)
             {
                 Console.WriteLine("error in send thread, error was:");
                 Console.WriteLine(e);
@@ -176,28 +180,7 @@ namespace server
                     Console.WriteLine("received client message");
                     Console.WriteLine("message length: " + bytesRead.ToString());
 
-                    TcpClient receiver = null;
-
-                    if (message[0] == 255)
-                    {
-                        byte[] byteAddress = new byte[4];
-                        for (int i = 0; i < 4; i++)
-                            byteAddress[i] = message[i + 1];
-                        IPAddress ipAdress = new IPAddress(byteAddress);
-                        foreach (TcpClient temp in clients)
-                        {
-                            IPEndPoint ep = (IPEndPoint)temp.Client.RemoteEndPoint;
-                            if (ep.Address == ipAdress)
-                            {
-                                receiver = temp;
-                                break;
-                            }
-                        }
-                    }
-
-                    Message msg = new Message(client, receiver, message);
-
-                    msgQueue.Enqueue(msg);
+                    msgQueue.Enqueue(interpret(message, client));
 
                     newData.Set();
                 }
@@ -206,7 +189,7 @@ namespace server
             {
                 Console.WriteLine("receive thread caught abort, exiting...");
             }
-            catch (Exception e)
+            catch (IOException e)
             {
                 Console.WriteLine("exception in receive thread, error was:");
                 Console.WriteLine(e);
@@ -218,6 +201,53 @@ namespace server
                 client.Close();
                 Console.WriteLine("client disconnected");
             }
+        }
+
+        private Message interpret(byte[] message, TcpClient sender)
+        {
+            byte command = message[0];
+            TcpClient receiver = null;
+            byte[] temp = new byte[4096];
+            int length = 0;
+            switch (command)
+            {
+                case Commands.BroadcastMessage:
+                    Array.Copy(message, 1, temp, 0, message.Length - 1);
+                    break;
+                case Commands.SpecificMessage:
+                    Array.Copy(message, 5, temp, 0, message.Length - 5);
+                    byte[] address = new byte[4];
+                    Array.Copy(message, 1, address, 0, 4);
+                    receiver = getClientByIpAddress(address);
+                    break;
+                case Commands.ListClients:
+                    String respString = "";
+                    foreach (TcpClient client in clients)
+                        respString += client.Client.RemoteEndPoint.ToString() + "\r\n";
+                    temp = new ASCIIEncoding().GetBytes(respString);
+                    receiver = sender;
+                    break;
+                default:
+                    temp = message;
+                    break;
+            }
+            
+            return new Message(sender, receiver, temp);
+        }
+
+        private TcpClient getClientByIpAddress(byte[] address)
+        {
+            foreach (TcpClient temp in clients)
+            {
+                IPEndPoint ep = (IPEndPoint)temp.Client.RemoteEndPoint;
+
+                if (address.SequenceEqual(ep.Address.GetAddressBytes()))
+                {
+                    return temp;
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EED0F3C4-48D4-452B-9250-0640F5F5316E}</ProjectGuid>
+    <ProjectGuid>{7FD69E42-0825-4380-8D41-EBF7D1E758E4}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>server</RootNamespace>
-    <AssemblyName>server</AssemblyName>
+    <RootNamespace>testClient</RootNamespace>
+    <AssemblyName>testClient</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -41,9 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interpreter.cs" />
-    <Compile Include="Message.cs" />
-    <Compile Include="Server.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
