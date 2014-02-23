@@ -20,7 +20,7 @@ namespace server
 
         private Queue<Message> msgQueue;
 
-        private List<TcpClient> clients;
+        private volatile List<TcpClient> clients;
 
         private int port = 3000;
 
@@ -67,8 +67,15 @@ namespace server
             Console.WriteLine("stopping sender");
             sendThread.Abort();
             Console.WriteLine("stopping receivers");
-            foreach (TcpClient client in clients)
-                client.Close();
+            try
+            {
+                foreach (TcpClient client in clients)
+                    client.Close();
+            }
+            catch (Exception e)
+            {
+
+            }
         }
 
         private void listen()
@@ -81,6 +88,7 @@ namespace server
                     TcpClient client = listener.AcceptTcpClient();
 
                     Console.WriteLine("client connected");
+                    Console.WriteLine(client.Client.RemoteEndPoint);
 
                     clients.Add(client);
 
@@ -116,14 +124,19 @@ namespace server
                     if (msgQueue.Count > 0)
                     {
                         Message msg = msgQueue.Dequeue();
-
+                        NetworkStream stream;
                         if (msg.To == null)
                         {
                             foreach (TcpClient client in clients)
                             {
-                                NetworkStream stream = client.GetStream();
+                                stream = client.GetStream();
                                 stream.Write(msg.Body, 0, msg.Body.Length);
                             }
+                        }
+                        else
+                        {
+                            stream = msg.To.GetStream();
+                            stream.Write(msg.Body, 0, msg.Body.Length);
                         }
                     }
                 }
@@ -163,7 +176,26 @@ namespace server
                     Console.WriteLine("received client message");
                     Console.WriteLine("message length: " + bytesRead.ToString());
 
-                    Message msg = new Message(client, null, message);
+                    TcpClient receiver = null;
+
+                    if (message[0] == 255)
+                    {
+                        byte[] byteAddress = new byte[4];
+                        for (int i = 0; i < 4; i++)
+                            byteAddress[i] = message[i + 1];
+                        IPAddress ipAdress = new IPAddress(byteAddress);
+                        foreach (TcpClient temp in clients)
+                        {
+                            IPEndPoint ep = (IPEndPoint)temp.Client.RemoteEndPoint;
+                            if (ep.Address == ipAdress)
+                            {
+                                receiver = temp;
+                                break;
+                            }
+                        }
+                    }
+
+                    Message msg = new Message(client, receiver, message);
 
                     msgQueue.Enqueue(msg);
 
