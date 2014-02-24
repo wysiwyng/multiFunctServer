@@ -37,7 +37,7 @@ namespace server
                 input = Console.ReadLine();
             server.stop();
             Thread.Sleep(1000);
-            Console.WriteLine("press enter to continue...");
+            Console.WriteLine("press any key to continue...");
             Console.ReadLine();
         }
 
@@ -78,7 +78,8 @@ namespace server
             }
             catch (Exception e)
             {
-
+				Console.WriteLine("caught exception while closing client: ");
+				Console.WriteLine(e);
             }
         }
 
@@ -114,6 +115,7 @@ namespace server
             finally
             {
                 listener.Stop();
+				Console.WriteLine("exiting listen thread");
             }
         }
 
@@ -149,11 +151,11 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                Console.WriteLine("send thread aborting, closing all connections...");
+                Console.WriteLine("send thread aborting...");
             }
             catch (SocketException e)
             {
-                Console.WriteLine("error in send thread, error was:");
+                Console.WriteLine("exception in send thread, exception was:");
                 Console.WriteLine(e);
             }
             finally
@@ -179,7 +181,7 @@ namespace server
 
                     if (bytesRead == 0) break;
 
-                    Console.WriteLine("received client message");
+                    Console.WriteLine("received message from: " + client.Client.RemoteEndPoint.ToString());
                     Console.WriteLine("message length: " + bytesRead.ToString());
 
                     byte[] message = new byte[bytesRead];
@@ -193,11 +195,11 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                Console.WriteLine("receive thread caught abort, exiting...");
+                Console.WriteLine("receive thread aborting...");
             }
             catch (IOException e)
             {
-                Console.WriteLine("exception in receive thread, error was:");
+                Console.WriteLine("exception in receive thread, exception was:");
                 Console.WriteLine(e);
             }
             finally
@@ -205,7 +207,7 @@ namespace server
                 clients.Remove(client);
                 clientStream.Close();
                 client.Close();
-                Console.WriteLine("client disconnected");
+                Console.WriteLine("client disconnected, exiting receive thread");
             }
         }
 
