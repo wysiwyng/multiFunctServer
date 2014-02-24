@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
-using serverExternals;
+using client;
 
 namespace testClient
 {
@@ -12,35 +12,31 @@ namespace testClient
     {
         static void Main(string[] args)
         {
-            while (true)
-            {
+            Console.Write("server ip> ");
+            Client client = new Client(System.Net.IPAddress.Parse(Console.ReadLine()), 3000);
+            client.openConnection();
 
-                TcpClient client = new TcpClient();
-                client.Connect(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }), 3000);
-                Console.WriteLine("connected");
-                Console.Write("ip > ");
-                String[] ip = Console.ReadLine().Split('.');
-                byte[] addressBytes = new byte[4];
-                for (int i = 0; i < 4; i++)
-                    addressBytes[i] = Convert.ToByte(ip[i]);
-                NetworkStream clientStream = client.GetStream();
-                byte[] message = new byte[4096];
-                Console.Write("type: > ");
-                message[0] = Convert.ToByte(Console.ReadLine());
-                Array.Copy(addressBytes, 0, message, 1, 4);
-                Console.Write("message: > ");
-                byte[] byteString = new ASCIIEncoding().GetBytes(Console.ReadLine());
-                Array.Copy(byteString, 0, message, 5, byteString.Length);
-                clientStream.Write(message, 0, byteString.Length + 5);
-                byte[] buffer = new byte[4096];
+            client.MessageReceived += client_MessageReceived;
 
-                int bytesRead = clientStream.Read(buffer, 0, buffer.Length);
-                Console.WriteLine(new ASCIIEncoding().GetString(buffer, 0, bytesRead));
-                clientStream.Close();
-                client.Close();
-                Console.Write("press enter, exit to quit > ");
-                if (Console.ReadLine() == "exit") return;
-            }
+            client.listClients();
+
+            Console.ReadLine();
+
+            client.sendMessage(new byte[] { (byte)'b', (byte)'l', (byte)'a' });
+
+            Console.Write("press any key to exit...");
+            Console.ReadLine();
+            client.closeConnection();
         }
+
+        static void client_MessageReceived(object sender, MessageReceivedEventArgs e)
+        {
+            Console.WriteLine();
+            Console.WriteLine(e.Timestamp.ToString());
+            foreach(byte temp in e.Message)
+                Console.WriteLine(temp.ToString());
+        }
+
+
     }
 }

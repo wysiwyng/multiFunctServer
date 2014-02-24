@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 using serverExternals;
 
 namespace client
@@ -17,6 +15,8 @@ namespace client
         private NetworkStream clientStream;
         private Thread receiveThread;
         private bool open;
+        private AutoResetEvent newData;
+        private byte[] data;
         private IPAddress address;
 
         public IPAddress Address
@@ -47,6 +47,7 @@ namespace client
 
         public Client(IPAddress serverAddress, int serverPort)
         {
+            newData = new AutoResetEvent(false);
             open = false;
             tcpClient = new TcpClient();
             address = serverAddress;
@@ -85,16 +86,21 @@ namespace client
                         break;
 
                     MessageReceivedEventArgs args = new MessageReceivedEventArgs();
-
+                    args.Message = new byte[bytesRead];
                     Array.Copy(received, args.Message, bytesRead);
                     args.Timestamp = DateTime.Now;
 
                     onMessageReceived(args);
+
+                    data = args.Message;
+                    newData.Set();
                 }
-            } catch (IOException e)
+            }
+            catch (IOException e)
             {
                 Console.WriteLine("IOException in receive thread, maybe the connection was lost/closed");
-            } finally
+            }
+            finally
             {
                 open = false;
             }
@@ -129,6 +135,18 @@ namespace client
             receiver.GetAddressBytes().CopyTo(temp, 1);
             message.CopyTo(temp, 5);
             send(temp);
+        }
+
+        public ServerClient[] listClients()
+        {
+            List<ServerClient> clients = new List<ServerClient>();
+            send(new byte[] { Commands.ListClients });
+            newData.WaitOne();
+            for (int i = 0; i < data.Length; i++)
+            {
+                clients.Add(new ServerClient(data[i++], new byte[] { data[i++], data[i++], data[i++], data[i] }));
+            }
+            return clients.ToArray();
         }
     }
 }

@@ -4,7 +4,7 @@ namespace serverExternals
 {
 	public class ServerClient
 	{
-		public int ClientID { get; set; }
+		public byte ClientID { get; set; }
 
 		public byte[] Address { get; set; }
 
@@ -13,22 +13,22 @@ namespace serverExternals
 			Address = new byte[4];
 		}
 
-		public ServerClient(int id)
+		public ServerClient(byte id)
 		{
 			Address = new byte[4];
 			ClientID = id;
 		}
 
-		public ServerClient(int id, byte[] ip)
+		public ServerClient(byte id, byte[] ip)
 		{
 			Address = ip;
 			ClientID = id;
 		}
 
-		public override string ToString()
-		{
-			return "";
-		}
+        public byte[] serialize()
+        {
+            return new byte[] { ClientID, Address[0], Address[1], Address[2], Address[3] };
+        }
 	}
 }
 
