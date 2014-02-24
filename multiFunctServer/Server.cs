@@ -13,17 +13,11 @@ namespace server
     class Server
     {
         private TcpListener listener;
-        
         private Thread listenThread;
         private Thread sendThread;
-        private List<Thread> receiveThreads;
-
         private AutoResetEvent newData;
-
         private Queue<Message> msgQueue;
-
         private volatile List<TcpClient> clients;
-
         private const int port = 3000;
 
         static void Main(string[] args)
@@ -48,7 +42,6 @@ namespace server
             msgQueue = new Queue<Message>();
 
             clients = new List<TcpClient>();
-            receiveThreads = new List<Thread>();
 
             listenThread = new Thread(new ThreadStart(listen));
             sendThread = new Thread(new ThreadStart(send));
@@ -66,7 +59,6 @@ namespace server
         private void stop()
         {
             Console.WriteLine("stopping listener");
-            //listenThread.Abort();
             listener.Stop();
             Console.WriteLine("stopping sender");
             sendThread.Abort();
@@ -75,11 +67,10 @@ namespace server
             {
                 foreach (TcpClient client in clients)
                     client.Close();
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
-				Console.WriteLine("caught exception while closing client: ");
-				Console.WriteLine(e);
+                Console.WriteLine("caught exception while closing client: ");
+                Console.WriteLine(e);
             }
         }
 
@@ -99,23 +90,19 @@ namespace server
 
                     Thread receiveThread = new Thread(new ParameterizedThreadStart(receive));
 
-                    receiveThreads.Add(receiveThread);
                     receiveThread.Start(client);
                 }
-            }
-            catch (ThreadAbortException e)
+            } catch (ThreadAbortException e)
             {
                 Console.WriteLine("listen thread aborting...");
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 Console.WriteLine("exception in listen thread, exception was:");
                 Console.WriteLine(e);
-            }
-            finally
+            } finally
             {
                 listener.Stop();
-				Console.WriteLine("exiting listen thread");
+                Console.WriteLine("exiting listen thread");
             }
         }
 
@@ -139,8 +126,7 @@ namespace server
                                 stream = client.GetStream();
                                 stream.Write(msg.Body, 0, msg.Body.Length);
                             }
-                        }
-                        else
+                        } else
                         {
                             Console.WriteLine("sending message to client with ip: " + msg.To.Client.RemoteEndPoint);
                             stream = msg.To.GetStream();
@@ -148,17 +134,14 @@ namespace server
                         }
                     }
                 }
-            }
-            catch (ThreadAbortException e)
+            } catch (ThreadAbortException e)
             {
                 Console.WriteLine("send thread aborting...");
-            }
-            catch (SocketException e)
+            } catch (SocketException e)
             {
                 Console.WriteLine("exception in send thread, exception was:");
                 Console.WriteLine(e);
-            }
-            finally
+            } finally
             {
                 Console.WriteLine("exiting send thread");
             }
@@ -179,7 +162,8 @@ namespace server
                 {
                     bytesRead = clientStream.Read(received, 0, received.Length);
 
-                    if (bytesRead == 0) break;
+                    if (bytesRead == 0)
+                        break;
 
                     Console.WriteLine("received message from: " + client.Client.RemoteEndPoint.ToString());
                     Console.WriteLine("message length: " + bytesRead.ToString());
@@ -192,17 +176,14 @@ namespace server
 
                     newData.Set();
                 }
-            }
-            catch (ThreadAbortException e)
+            } catch (ThreadAbortException e)
             {
                 Console.WriteLine("receive thread aborting...");
-            }
-            catch (IOException e)
+            } catch (IOException e)
             {
                 Console.WriteLine("exception in receive thread, exception was:");
                 Console.WriteLine(e);
-            }
-            finally
+            } finally
             {
                 clients.Remove(client);
                 clientStream.Close();
@@ -213,7 +194,7 @@ namespace server
 
         private Message interpret(byte[] message, TcpClient sender)
         {
-            byte command = message[0];
+            byte command = message [0];
             TcpClient receiver = null;
             byte[] temp;
             switch (command)
