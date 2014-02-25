@@ -1,5 +1,6 @@
 using System;
 using System.Net.Sockets;
+using System.Net;
 using serverExternals;
 
 namespace server
@@ -11,6 +12,8 @@ namespace server
         internal TcpClient TcpClient{ get; private set; }
 
         internal byte ClientId { get { return ServerClient.ClientID; } set { ServerClient.ClientID = value; } }
+
+        internal NetworkStream ClientStream { get { return TcpClient.GetStream(); } }
 
         internal Client(ServerClient serverClient, TcpClient tcpClient)
         {

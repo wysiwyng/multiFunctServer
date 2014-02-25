@@ -38,6 +38,7 @@ namespace server
         private Server()
 		{
             stdcomm.Message.prevColor = Console.ForegroundColor;
+            DebugMessage.DebugEnabled = false;
             listener = new TcpListener(IPAddress.Any, port);
 
 			msgQueue = new Queue<Message>();
@@ -109,7 +110,6 @@ namespace server
                     if (msgQueue.Count > 0)
                     {
                         Message msg = msgQueue.Dequeue();
-                        NetworkStream stream;
                         if (msg.To == null)
                         {
                             DebugMessage.show("sending message to all clients");
@@ -118,8 +118,7 @@ namespace server
                         else
                         {
                             DebugMessage.show("sending message to client with ip: " + msg.To.TcpClient.Client.RemoteEndPoint);
-                            stream = msg.To.TcpClient.GetStream();
-                            stream.Write(msg.Body, 0, msg.Body.Length);
+                            msg.To.ClientStream.Write(msg.Body, 0, msg.Body.Length);
                         }
                     }
                 }
