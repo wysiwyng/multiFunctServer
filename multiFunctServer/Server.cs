@@ -40,13 +40,10 @@ namespace server
         }
 
         private Server()
-        {
+		{
             listener = new TcpListener(IPAddress.Any, port);
 
-            msgQueue = new Queue<Message>();
-
-            tcpClients = new List<TcpClient>();
-            serverClients = new List<ServerClient>();
+			msgQueue = new Queue<Message>();
 
             listenThread = new Thread(listen);
             sendThread = new Thread(send);
@@ -68,16 +65,7 @@ namespace server
             DebugMessage.show("stopping sender");
             sendThread.Abort();
             DebugMessage.show("stopping receivers");
-            try
-            {
-                foreach (TcpClient client in tcpClients)
-                    client.Close();
-            }
-            catch (Exception e)
-            {
-                DebugMessage.show("caught exception while closing client: ");
-                DebugMessage.show(e.ToString());
-            }
+			ClientManager.removeAllClients();
         }
 
         private void listen()
@@ -87,22 +75,15 @@ namespace server
             {
                 while (true)
                 {
-                    TcpClient client = listener.AcceptTcpClient();
-					tcpClients.Add(client);
+                    TcpClient tcpClient = listener.AcceptTcpClient();
 
-					IPEndPoint ep = (IPEndPoint)client.Client.RemoteEndPoint;
-                    byte[] addressBytes = ep.Address.GetAddressBytes();
+					Client client = ClientManager.addClient(tcpClient);
 
-					ServerClient serverClient = new ServerClient((byte)tcpClients.IndexOf(client), addressBytes);
-					serverClients.Add(serverClient);
-                    
-                    DebugMessage.show("client connected with endpoint: " + ep.ToString());
+                    DebugMessage.show("client connected with endpoint: " + client.TcpClient.Client.RemoteEndPoint.ToString());
 
                     Thread receiveThread = new Thread(receive);
 
-					ReceiveThreadArgs args = new ReceiveThreadArgs(client, serverClient);
-
-                    receiveThread.Start(args);
+                    receiveThread.Start(client);
                 }
             }
             catch (ThreadAbortException e)
@@ -136,16 +117,12 @@ namespace server
                         if (msg.To == null)
                         {
                             DebugMessage.show("sending message to all clients");
-                            foreach (TcpClient client in tcpClients)
-                            {
-                                stream = client.GetStream();
-                                stream.Write(msg.Body, 0, msg.Body.Length);
-                            }
+							ClientManager.sendToAll(msg.Body);
                         }
                         else
                         {
-                            DebugMessage.show("sending message to client with ip: " + msg.To.Client.RemoteEndPoint);
-                            stream = msg.To.GetStream();
+                            DebugMessage.show("sending message to client with ip: " + msg.To.TcpClient.Client.RemoteEndPoint);
+                            stream = msg.To.TcpClient.GetStream();
                             stream.Write(msg.Body, 0, msg.Body.Length);
                         }
                     }
@@ -168,12 +145,11 @@ namespace server
 
         private void receive(object threadArgs)
 		{
-			ReceiveThreadArgs args = (ReceiveThreadArgs)threadArgs;
+			Client client = (Client)threadArgs;
 
-			TcpClient client = args.tcpClient;
-			ServerClient serverClient = args.serverClient;
+			TcpClient tcpClient = client.TcpClient;
 
-            NetworkStream clientStream = client.GetStream();
+            NetworkStream clientStream = tcpClient.GetStream();
 
             byte[] received = new byte[4096];
             int bytesRead;
@@ -187,7 +163,7 @@ namespace server
                     if (bytesRead == 0)
                         break;
 
-                    DebugMessage.show("received message from: " + client.Client.RemoteEndPoint.ToString());
+                    DebugMessage.show("received message from: " + tcpClient.Client.RemoteEndPoint.ToString());
                     DebugMessage.show("message length: " + bytesRead.ToString());
 
                     byte[] message = new byte[bytesRead];
@@ -215,18 +191,15 @@ namespace server
 			}
             finally
             {
-                tcpClients.Remove(client);
-				serverClients.Remove(serverClient);
-                clientStream.Close();
-                client.Close();
+				ClientManager.removeClient(client);
                 DebugMessage.show("client disconnected, exiting receive thread");
             }
         }
 
-        private Message interpret(byte[] message, TcpClient sender)
+        private Message interpret(byte[] message, Client sender)
         {
             byte command = message[0];
-            TcpClient receiver = null;
+            Client receiver = null;
             byte[] temp;
             switch (command)
             {
@@ -237,18 +210,11 @@ namespace server
                 case Commands.SpecificMessage:
                     temp = new byte[message.Length - 2];
                     Array.Copy(message, 2, temp, 0, message.Length - 2);
-                    byte id = message [1];
-                    receiver = tcpClients [id];
+                    byte id = message[1];
+                    receiver = ClientManager.getClientByID(id);
                     break;
                 case Commands.ListClients:
-                    String respString = "";
-                    foreach (ServerClient client in serverClients)
-                    {
-                        foreach (byte bla in client.serialize())
-                            respString += (char)bla;
-                        respString += "\r\n";
-                    }
-                    temp = new ASCIIEncoding().GetBytes(respString);
+					temp = ClientManager.serializeAll();
                     receiver = sender;
                     break;
                 default:

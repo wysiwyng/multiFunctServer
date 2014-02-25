@@ -33,6 +33,8 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <Externalconsole>true</Externalconsole>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -49,6 +51,8 @@
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReceiveThreadArgs.cs" />
+    <Compile Include="ClientManager.cs" />
+    <Compile Include="Client.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

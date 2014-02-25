@@ -9,16 +9,16 @@ namespace server
 {
     class Message
     {
-        private TcpClient from;
-        public TcpClient From { get { return from; } }
+        private Client from;
+        public Client From { get { return from; } }
 
-        private TcpClient to;
-        public TcpClient To { get { return to; } }
+        private Client to;
+        public Client To { get { return to; } }
 
         private byte[] body;
         public byte[] Body { get { return body; } }
 
-        public Message(TcpClient from, TcpClient to, byte[] body)
+        public Message(Client from, Client to, byte[] body)
         {
             this.from = from;
             this.to = to;
