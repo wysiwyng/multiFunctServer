@@ -4,7 +4,16 @@ multiFunctServer
 a multifunctional extensible tcp server, used in future projects.
 
 
-compiling
----------
+compatibility
+-------------
 
-designed to run under .NET and mono
+runs with .NET 4.0 and mono 2.10.8+
+
+
+usage
+-----
+
+* compile & run the server
+* build an application around the client library
+* ???
+* profit
