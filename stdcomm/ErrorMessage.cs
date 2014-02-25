@@ -2,13 +2,14 @@ using System;
 
 namespace stdcomm
 {
-    public static class DebugMessage
+    public static class ErrorMessage
     {
         public static void show(string message)
         {
-            Message.setColor(ConsoleColor.White);
-            Message.showMessage("debug", message);
+            Message.setColor(ConsoleColor.DarkRed);
+            Message.showMessage("error", message);
             Message.resetColor();
         }
     }
 }
+

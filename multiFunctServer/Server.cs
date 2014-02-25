@@ -18,24 +18,20 @@ namespace server
         private Thread sendThread;
         private AutoResetEvent newData;
         private Queue<Message> msgQueue;
-        private List<TcpClient> tcpClients;
-        private List<ServerClient> serverClients;
         private const int port = 3000;
 
         static void Main(string[] args)
         {
             Server server = new Server();
-            DebugMessage.show("server created");
+            InformationMessage.show("server created");
             server.start();
-            DebugMessage.show("server started");
-			DebugMessage.UserInput = true;
+            InformationMessage.show("server started");
             String input = "";
             while (input != "exit")
                 input = Console.ReadLine();
             server.stop();
             Thread.Sleep(1000);
-			DebugMessage.UserInput = false;
-            DebugMessage.show("press any key to continue...");
+            InformationMessage.show("press any key to continue...");
             Console.ReadLine();
         }
 
@@ -55,16 +51,16 @@ namespace server
         {
             listenThread.Start();
             sendThread.Start();
-            DebugMessage.show("server running on port " + port);
+            InformationMessage.show("server running on port " + port);
         }
 
         private void stop()
         {
-            DebugMessage.show("stopping listener");
+            InformationMessage.show("stopping listener");
             listener.Stop();
-            DebugMessage.show("stopping sender");
+            InformationMessage.show("stopping sender");
             sendThread.Abort();
-            DebugMessage.show("stopping receivers");
+            InformationMessage.show("stopping receivers");
 			ClientManager.removeAllClients();
         }
 
@@ -79,7 +75,7 @@ namespace server
 
 					Client client = ClientManager.addClient(tcpClient);
 
-                    DebugMessage.show("client connected with endpoint: " + client.TcpClient.Client.RemoteEndPoint.ToString());
+                    InformationMessage.show("client connected with endpoint: " + client.TcpClient.Client.RemoteEndPoint.ToString());
 
                     Thread receiveThread = new Thread(receive);
 
@@ -88,12 +84,11 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                DebugMessage.show("listen thread aborting...");
+                ErrorMessage.show("listen thread aborting...");
             }
             catch (SocketException e)
             {
-                DebugMessage.show("SocketException in listen thread, maybe the socket shut down, exception was:");
-                DebugMessage.show(e.ToString());
+                ErrorMessage.show("SocketException in listen thread, maybe the socket shut down, exception was:\r\n" + e.ToString());
             }
             finally
             {
@@ -130,12 +125,11 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                DebugMessage.show("send thread aborting...");
+                ErrorMessage.show("send thread aborting...");
             }
             catch (SocketException e)
             {
-                DebugMessage.show("exception in send thread, exception was:");
-                DebugMessage.show(e.ToString());
+                ErrorMessage.show("exception in send thread, exception was:\r\n" + e.ToString());
             }
             finally
             {
@@ -151,6 +145,8 @@ namespace server
 
             NetworkStream clientStream = tcpClient.GetStream();
 
+            string endpointAddress = tcpClient.Client.RemoteEndPoint.ToString();
+
             byte[] received = new byte[4096];
             int bytesRead;
 
@@ -163,66 +159,35 @@ namespace server
                     if (bytesRead == 0)
                         break;
 
-                    DebugMessage.show("received message from: " + tcpClient.Client.RemoteEndPoint.ToString());
+                    InformationMessage.show("received message from: " + endpointAddress);
                     DebugMessage.show("message length: " + bytesRead.ToString());
 
                     byte[] message = new byte[bytesRead];
 
                     Array.Copy(received, message, bytesRead);
 
-                    msgQueue.Enqueue(interpret(message, client));
+                    msgQueue.Enqueue(Interpreter.interpret(message, client));
 
                     newData.Set();
                 }
             }
             catch (ThreadAbortException e)
             {
-                DebugMessage.show("receive thread aborting...");
+                ErrorMessage.show("receive thread aborting...");
             }
             catch (IOException e)
             {
-                DebugMessage.show("IOException in receive thread, maybe the socket shut down, exception was:");
-                DebugMessage.show(e.ToString());
+                ErrorMessage.show("IOException in receive thread, maybe the socket shut down, exception was:\r\n" + e.ToString());
             }
 			catch(ObjectDisposedException e)
 			{
-				DebugMessage.show("ObjectDisposedException in receive thread, maybe the socket shut down, exception was:");
-				DebugMessage.show(e.ToString());
+                ErrorMessage.show("ObjectDisposedException in receive thread, maybe the socket shut down, exception was:\r\n" + e.ToString());
 			}
             finally
             {
 				ClientManager.removeClient(client);
-                DebugMessage.show("client disconnected, exiting receive thread");
+                InformationMessage.show("client " + endpointAddress + " disconnected, closing thread");
             }
-        }
-
-        private Message interpret(byte[] message, Client sender)
-        {
-            byte command = message[0];
-            Client receiver = null;
-            byte[] temp;
-            switch (command)
-            {
-                case Commands.BroadcastMessage:
-                    temp = new byte[message.Length - 1];
-                    Array.Copy(message, 1, temp, 0, message.Length - 1);
-                    break;
-                case Commands.SpecificMessage:
-                    temp = new byte[message.Length - 2];
-                    Array.Copy(message, 2, temp, 0, message.Length - 2);
-                    byte id = message[1];
-                    receiver = ClientManager.getClientByID(id);
-                    break;
-                case Commands.ListClients:
-					temp = ClientManager.serializeAll();
-                    receiver = sender;
-                    break;
-                default:
-                    temp = message;
-                    break;
-            }
-            
-            return new Message(sender, receiver, temp);
         }
     }
 }

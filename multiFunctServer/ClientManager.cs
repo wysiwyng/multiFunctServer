@@ -36,6 +36,8 @@ namespace server
 
         public static void removeClient(Client client)
         {
+            if(!clients.Contains(client))
+                return;
             client.TcpClient.GetStream().Close();
             client.TcpClient.Close();
             clients.Remove(client);
@@ -53,11 +55,8 @@ namespace server
                 {
 
                 }
-                finally
-                {
-                    clients.Remove(client);
-                }
             }
+            clients.Clear();
         }
 
         public static Client getClientByID(int id)
