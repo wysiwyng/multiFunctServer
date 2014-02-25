@@ -7,6 +7,7 @@ using System.Threading;
 using System.IO;
 using System.Linq;
 using serverExternals;
+using stdcomm;
 
 namespace server
 {
@@ -17,22 +18,24 @@ namespace server
         private Thread sendThread;
         private AutoResetEvent newData;
         private Queue<Message> msgQueue;
-        private volatile List<TcpClient> tcpClients;
+        private List<TcpClient> tcpClients;
         private List<ServerClient> serverClients;
         private const int port = 3000;
 
         static void Main(string[] args)
         {
             Server server = new Server();
-            Console.WriteLine("server created");
+            DebugMessage.show("server created");
             server.start();
-            Console.WriteLine("server started");
+            DebugMessage.show("server started");
+			DebugMessage.UserInput = true;
             String input = "";
             while (input != "exit")
                 input = Console.ReadLine();
             server.stop();
             Thread.Sleep(1000);
-            Console.WriteLine("press any key to continue...");
+			DebugMessage.UserInput = false;
+            DebugMessage.show("press any key to continue...");
             Console.ReadLine();
         }
 
@@ -45,8 +48,8 @@ namespace server
             tcpClients = new List<TcpClient>();
             serverClients = new List<ServerClient>();
 
-            listenThread = new Thread(new ThreadStart(listen));
-            sendThread = new Thread(new ThreadStart(send));
+            listenThread = new Thread(listen);
+            sendThread = new Thread(send);
 
             newData = new AutoResetEvent(false);
         }
@@ -55,16 +58,16 @@ namespace server
         {
             listenThread.Start();
             sendThread.Start();
-            Console.WriteLine("server running on port " + port);
+            DebugMessage.show("server running on port " + port);
         }
 
         private void stop()
         {
-            Console.WriteLine("stopping listener");
+            DebugMessage.show("stopping listener");
             listener.Stop();
-            Console.WriteLine("stopping sender");
+            DebugMessage.show("stopping sender");
             sendThread.Abort();
-            Console.WriteLine("stopping receivers");
+            DebugMessage.show("stopping receivers");
             try
             {
                 foreach (TcpClient client in tcpClients)
@@ -72,8 +75,8 @@ namespace server
             }
             catch (Exception e)
             {
-                Console.WriteLine("caught exception while closing client: ");
-                Console.WriteLine(e);
+                DebugMessage.show("caught exception while closing client: ");
+                DebugMessage.show(e.ToString());
             }
         }
 
@@ -85,34 +88,36 @@ namespace server
                 while (true)
                 {
                     TcpClient client = listener.AcceptTcpClient();
+					tcpClients.Add(client);
 
-                    Console.Write("client connected with endpoint: ");
-                    Console.WriteLine(client.Client.RemoteEndPoint.ToString());
-
-                    IPEndPoint ep = (IPEndPoint)client.Client.RemoteEndPoint;
+					IPEndPoint ep = (IPEndPoint)client.Client.RemoteEndPoint;
                     byte[] addressBytes = ep.Address.GetAddressBytes();
 
-                    tcpClients.Add(client);
-                    serverClients.Add(new ServerClient((byte)tcpClients.IndexOf(client), addressBytes));
+					ServerClient serverClient = new ServerClient((byte)tcpClients.IndexOf(client), addressBytes);
+					serverClients.Add(serverClient);
+                    
+                    DebugMessage.show("client connected with endpoint: " + ep.ToString());
 
-                    Thread receiveThread = new Thread(new ParameterizedThreadStart(receive));
+                    Thread receiveThread = new Thread(receive);
 
-                    receiveThread.Start(client);
+					ReceiveThreadArgs args = new ReceiveThreadArgs(client, serverClient);
+
+                    receiveThread.Start(args);
                 }
             }
             catch (ThreadAbortException e)
             {
-                Console.WriteLine("listen thread aborting...");
+                DebugMessage.show("listen thread aborting...");
             }
-            catch (Exception e)
+            catch (SocketException e)
             {
-                Console.WriteLine("exception in listen thread, exception was:");
-                Console.WriteLine(e);
+                DebugMessage.show("SocketException in listen thread, maybe the socket shut down, exception was:");
+                DebugMessage.show(e.ToString());
             }
             finally
             {
                 listener.Stop();
-                Console.WriteLine("exiting listen thread");
+                DebugMessage.show("exiting listen thread");
             }
         }
 
@@ -130,7 +135,7 @@ namespace server
                         NetworkStream stream;
                         if (msg.To == null)
                         {
-                            Console.WriteLine("sending message to all clients");
+                            DebugMessage.show("sending message to all clients");
                             foreach (TcpClient client in tcpClients)
                             {
                                 stream = client.GetStream();
@@ -139,7 +144,7 @@ namespace server
                         }
                         else
                         {
-                            Console.WriteLine("sending message to client with ip: " + msg.To.Client.RemoteEndPoint);
+                            DebugMessage.show("sending message to client with ip: " + msg.To.Client.RemoteEndPoint);
                             stream = msg.To.GetStream();
                             stream.Write(msg.Body, 0, msg.Body.Length);
                         }
@@ -148,22 +153,25 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                Console.WriteLine("send thread aborting...");
+                DebugMessage.show("send thread aborting...");
             }
             catch (SocketException e)
             {
-                Console.WriteLine("exception in send thread, exception was:");
-                Console.WriteLine(e);
+                DebugMessage.show("exception in send thread, exception was:");
+                DebugMessage.show(e.ToString());
             }
             finally
             {
-                Console.WriteLine("exiting send thread");
+                DebugMessage.show("exiting send thread");
             }
         }
 
-        private void receive(object tcpClient)
-        {
-            TcpClient client = (TcpClient)tcpClient;
+        private void receive(object threadArgs)
+		{
+			ReceiveThreadArgs args = (ReceiveThreadArgs)threadArgs;
+
+			TcpClient client = args.tcpClient;
+			ServerClient serverClient = args.serverClient;
 
             NetworkStream clientStream = client.GetStream();
 
@@ -179,8 +187,8 @@ namespace server
                     if (bytesRead == 0)
                         break;
 
-                    Console.WriteLine("received message from: " + client.Client.RemoteEndPoint.ToString());
-                    Console.WriteLine("message length: " + bytesRead.ToString());
+                    DebugMessage.show("received message from: " + client.Client.RemoteEndPoint.ToString());
+                    DebugMessage.show("message length: " + bytesRead.ToString());
 
                     byte[] message = new byte[bytesRead];
 
@@ -193,25 +201,31 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                Console.WriteLine("receive thread aborting...");
+                DebugMessage.show("receive thread aborting...");
             }
             catch (IOException e)
             {
-                Console.WriteLine("exception in receive thread, exception was:");
-                Console.WriteLine(e);
+                DebugMessage.show("IOException in receive thread, maybe the socket shut down, exception was:");
+                DebugMessage.show(e.ToString());
             }
+			catch(ObjectDisposedException e)
+			{
+				DebugMessage.show("ObjectDisposedException in receive thread, maybe the socket shut down, exception was:");
+				DebugMessage.show(e.ToString());
+			}
             finally
             {
                 tcpClients.Remove(client);
+				serverClients.Remove(serverClient);
                 clientStream.Close();
                 client.Close();
-                Console.WriteLine("client disconnected, exiting receive thread");
+                DebugMessage.show("client disconnected, exiting receive thread");
             }
         }
 
         private Message interpret(byte[] message, TcpClient sender)
         {
-            byte command = message [0];
+            byte command = message[0];
             TcpClient receiver = null;
             byte[] temp;
             switch (command)
@@ -223,8 +237,8 @@ namespace server
                 case Commands.SpecificMessage:
                     temp = new byte[message.Length - 2];
                     Array.Copy(message, 2, temp, 0, message.Length - 2);
-                    byte id = message[1];
-                    receiver = tcpClients[id];
+                    byte id = message [1];
+                    receiver = tcpClients [id];
                     break;
                 case Commands.ListClients:
                     String respString = "";
@@ -243,21 +257,6 @@ namespace server
             }
             
             return new Message(sender, receiver, temp);
-        }
-
-        private TcpClient getClientByIpAddress(byte[] address)
-        {
-            foreach (TcpClient temp in tcpClients)
-            {
-                IPEndPoint ep = (IPEndPoint)temp.Client.RemoteEndPoint;
-
-                if (address.SequenceEqual(ep.Address.GetAddressBytes()))
-                {
-                    return temp;
-                }
-            }
-
-            return null;
         }
     }
 }

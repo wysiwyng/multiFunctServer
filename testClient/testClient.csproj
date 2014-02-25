@@ -52,11 +52,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\client\client.csproj">
-      <Project>{0f7df93c-be85-4857-8b26-258ab192a322}</Project>
+      <Project>{0F7DF93C-BE85-4857-8B26-258AB192A322}</Project>
       <Name>client</Name>
     </ProjectReference>
     <ProjectReference Include="..\serverExternals\serverExternals.csproj">
-      <Project>{c2f793c1-2f41-442f-8e1f-f8b2d342cbcd}</Project>
+      <Project>{C2F793C1-2F41-442F-8E1F-F8B2D342CBCD}</Project>
       <Name>serverExternals</Name>
     </ProjectReference>
   </ItemGroup>

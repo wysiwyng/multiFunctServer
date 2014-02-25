@@ -48,6 +48,7 @@
     <Compile Include="Message.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReceiveThreadArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -64,6 +65,10 @@
     <ProjectReference Include="..\serverExternals\serverExternals.csproj">
       <Project>{C2F793C1-2F41-442F-8E1F-F8B2D342CBCD}</Project>
       <Name>serverExternals</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\stdcomm\stdcomm.csproj">
+      <Project>{C74EBC79-A34D-4D10-8BDD-378E09070EA6}</Project>
+      <Name>stdcomm</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>
