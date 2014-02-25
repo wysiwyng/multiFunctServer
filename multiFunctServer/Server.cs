@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
-using System.Linq;
-using serverExternals;
 using stdcomm;
 
 namespace server
@@ -38,7 +35,7 @@ namespace server
         private Server()
 		{
             stdcomm.Message.prevColor = Console.ForegroundColor;
-            DebugMessage.DebugEnabled = false;
+            DebugMessage.DebugEnabled = true;
             listener = new TcpListener(IPAddress.Any, port);
 
 			msgQueue = new Queue<Message>();

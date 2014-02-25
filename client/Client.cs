@@ -1,10 +1,8 @@
 using System;
 using System.Threading;
 using System.Net;
-using System.Text;
 using System.Net.Sockets;
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 using serverExternals;
 

@@ -6,7 +6,7 @@ namespace stdcomm
     {
         public static void show(string message)
         {
-            Message.showMessage("error", message, ConsoleColor.DarkRed);
+            Message.showMessage("error", message, ConsoleColor.Red);
         }
     }
 }
