@@ -38,7 +38,7 @@ namespace server
         {
             if(!clients.Contains(client))
                 return;
-            client.TcpClient.GetStream().Close();
+            //client.TcpClient.GetStream().Close();
             client.TcpClient.Close();
             clients.Remove(client);
         }
@@ -74,14 +74,14 @@ namespace server
 
         public static byte[] serializeAll()
         {
-            String respString = "";
+            byte[] resp = new byte[clients.Count * 5];
+            int respIdx = 0;
             foreach (Client client in clients)
             {
                 foreach (byte bla in client.ServerClient.serialize())
-                    respString += (char)bla;
-                respString += "\r\n";
+                    resp[respIdx++] = bla;
             }
-            return new ASCIIEncoding().GetBytes(respString);
+            return resp;
         }
     }
 }

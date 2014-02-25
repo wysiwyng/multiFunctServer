@@ -6,7 +6,7 @@ namespace stdcomm
     {
         public static void show(string message)
         {
-            Message.setColor(ConsoleColor.White);
+            Message.setColor(ConsoleColor.DarkGreen);
             Message.showMessage("debug", message);
             Message.resetColor();
         }

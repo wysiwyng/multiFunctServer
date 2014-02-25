@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using client;
+using serverExternals;
 
 namespace testClient
 {
@@ -18,11 +19,11 @@ namespace testClient
 
             client.MessageReceived += client_MessageReceived;
 
-            client.listClients();
+            ServerClient[] list = client.listClients();
 
             Console.ReadLine();
 
-            client.sendMessage(new byte[] { (byte)'b', (byte)'l', (byte)'a' });
+            client.sendMessage(new byte[] { (byte)'b', (byte)'l', (byte)'a' }, list[0]);
 
             Console.Write("press any key to exit...");
             Console.ReadLine();

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Net;
+using System.Text;
 using System.Net.Sockets;
 using System.IO;
 using System.Linq;
@@ -15,8 +16,9 @@ namespace client
         private NetworkStream clientStream;
         private Thread receiveThread;
         private bool open;
+        private volatile bool internalData;
         private AutoResetEvent newData;
-        private byte[] data;
+        private volatile byte[] data;
         private IPAddress address;
 
         public IPAddress Address
@@ -49,6 +51,7 @@ namespace client
         {
             newData = new AutoResetEvent(false);
             open = false;
+            internalData = false;
             tcpClient = new TcpClient();
             address = serverAddress;
             port = serverPort;
@@ -85,15 +88,21 @@ namespace client
                     if (bytesRead == 0)
                         break;
 
-                    MessageReceivedEventArgs args = new MessageReceivedEventArgs();
-                    args.Message = new byte[bytesRead];
-                    Array.Copy(received, args.Message, bytesRead);
-                    args.Timestamp = DateTime.Now;
+                    if(internalData)
+                    {
+                        data = new byte[bytesRead];
+                        Array.Copy(received, data, bytesRead);
+                        newData.Set();
+                    }
+                    else
+                    {
+                        MessageReceivedEventArgs args = new MessageReceivedEventArgs();
+                        args.Message = new byte[bytesRead];
+                        Array.Copy(received, args.Message, bytesRead);
+                        args.Timestamp = DateTime.Now;
 
-                    onMessageReceived(args);
-
-                    data = args.Message;
-                    newData.Set();
+                        onMessageReceived(args);
+                    }
                 }
             }
             catch (IOException e)
@@ -128,24 +137,28 @@ namespace client
             send(temp);
         }
 
-        public void sendMessage(byte[] message, IPAddress receiver)
+        public void sendMessage(byte[] message, ServerClient receiver)
         {
-            byte[] temp = new byte[message.Length + 5];
-            temp [0] = Commands.SpecificMessage;
-            receiver.GetAddressBytes().CopyTo(temp, 1);
-            message.CopyTo(temp, 5);
+            byte[] temp = new byte[message.Length + 2];
+            temp[0] = Commands.SpecificMessage;
+            temp[1] = receiver.ClientID;
+            message.CopyTo(temp, 2);
             send(temp);
         }
 
         public ServerClient[] listClients()
         {
+            internalData = true;
             List<ServerClient> clients = new List<ServerClient>();
             send(new byte[] { Commands.ListClients });
             newData.WaitOne();
-            for (int i = 0; i < data.Length; i++)
+
+            for (int i = 0; i < data.Length / 5; i++)
             {
-                clients.Add(new ServerClient(data[i++], new byte[] { data[i++], data[i++], data[i++], data[i] }));
+                clients.Add(new ServerClient(data[0 + i * 5], new byte[] { data[1 + i * 5], data[2 + i * 5], data[3 + i * 5], data[4 + i * 5]}));
             }
+
+            internalData = false;
             return clients.ToArray();
         }
     }
