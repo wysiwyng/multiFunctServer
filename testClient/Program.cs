@@ -37,7 +37,5 @@ namespace testClient
             foreach(byte temp in e.Message)
                 Console.WriteLine(temp.ToString());
         }
-
-
     }
 }

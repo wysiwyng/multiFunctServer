@@ -107,7 +107,7 @@ namespace client
             }
             catch (IOException e)
             {
-                Console.WriteLine("IOException in receive thread, maybe the connection was lost/closed");
+                Console.WriteLine("IOException in receive thread, maybe the connection was lost/closed:\r\n" + e.ToString());
             }
             finally
             {

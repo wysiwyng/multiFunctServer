@@ -4,21 +4,18 @@ using serverExternals;
 
 namespace server
 {
-    public class Client
+    internal class Client
     {
-        public ServerClient ServerClient { get; private set; }
+        internal ServerClient ServerClient { get; private set; }
 
-        public TcpClient TcpClient{ get; private set; }
+        internal TcpClient TcpClient{ get; private set; }
 
-        public Client(ServerClient serverClient, TcpClient tcpClient)
+        internal byte ClientId { get { return ServerClient.ClientID; } set { ServerClient.ClientID = value; } }
+
+        internal Client(ServerClient serverClient, TcpClient tcpClient)
         {
             ServerClient = serverClient;
             TcpClient = tcpClient;
-        }
-
-        public void setClientId(byte id)
-        {
-            ServerClient.ClientID = id;
         }
     }
 }

@@ -7,22 +7,19 @@ using System.Net.Sockets;
 
 namespace server
 {
-    class Message
+    internal class Message
     {
-        private Client from;
-        public Client From { get { return from; } }
+        internal Client From { get; private set; }
 
-        private Client to;
-        public Client To { get { return to; } }
+        internal Client To { get; private set; }
 
-        private byte[] body;
-        public byte[] Body { get { return body; } }
+        internal byte[] Body { get; private set; }
 
-        public Message(Client from, Client to, byte[] body)
+        internal Message(Client from, Client to, byte[] body)
         {
-            this.from = from;
-            this.to = to;
-            this.body = body;
+            From = from;
+            To = to;
+            Body = body;
         }
     }
 }

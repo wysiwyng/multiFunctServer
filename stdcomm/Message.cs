@@ -4,22 +4,19 @@ namespace stdcomm
 {
     public static class Message
     {
-        private static ConsoleColor prevColor;
-        public static void setColor(ConsoleColor color)
-        {
-            prevColor = Console.ForegroundColor;
-            Console.ForegroundColor = color;
-        }
+        public static ConsoleColor prevColor;
 
-        public static void resetColor()
-        {
-            Console.ForegroundColor = prevColor;
-        }
+        private static object messageLock = new object();
 
-        public static void showMessage(string type, string message)
+        internal static void showMessage(string type, string message, ConsoleColor color)
         {
-            Console.Write(type + ": [" + DateTime.Now.ToString("HH:mm:ss.ffff") + "] ");
-            Console.WriteLine(message);
+            lock (messageLock)
+            {
+                Console.ForegroundColor = color;
+                Console.Write(type + ": [" + DateTime.Now.ToString("HH:mm:ss.ffff") + "] ");
+                Console.ForegroundColor = prevColor;
+                Console.WriteLine(message);
+            }
         }
     }
 }

@@ -7,9 +7,9 @@ using serverExternals;
 
 namespace server
 {
-    static class Interpreter
+    internal static class Interpreter
     {
-        public static Message interpret(byte[] message, Client sender)
+        internal static Message interpret(byte[] message, Client sender)
         {
             byte command = message[0];
             Client receiver = null;

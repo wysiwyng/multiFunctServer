@@ -50,7 +50,6 @@
     <Compile Include="Message.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReceiveThreadArgs.cs" />
     <Compile Include="ClientManager.cs" />
     <Compile Include="Client.cs" />
   </ItemGroup>

@@ -37,6 +37,7 @@ namespace server
 
         private Server()
 		{
+            stdcomm.Message.prevColor = Console.ForegroundColor;
             listener = new TcpListener(IPAddress.Any, port);
 
 			msgQueue = new Queue<Message>();
@@ -84,7 +85,7 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                ErrorMessage.show("listen thread aborting...");
+                ErrorMessage.show("listen thread aborting, exception was:\r\n" + e.ToString());
             }
             catch (SocketException e)
             {
@@ -125,7 +126,7 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                ErrorMessage.show("send thread aborting...");
+                ErrorMessage.show("send thread aborting, exception was:\r\n" + e.ToString());
             }
             catch (SocketException e)
             {
@@ -173,7 +174,7 @@ namespace server
             }
             catch (ThreadAbortException e)
             {
-                ErrorMessage.show("receive thread aborting...");
+                ErrorMessage.show("receive thread aborting, exception was:\r\n" + e.ToString());
             }
             catch (IOException e)
             {

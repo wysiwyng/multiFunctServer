@@ -8,21 +8,21 @@ using stdcomm;
 
 namespace server
 {
-    public static class ClientManager
+    internal static class ClientManager
     {
-        public static List<Client> clients;
+        internal static List<Client> clients;
 
         static ClientManager()
         {
             clients = new List<Client>();
         }
 
-        public static void addClient(Client client)
+        internal static void addClient(Client client)
         {
             clients.Add(client);
         }
 
-        public static Client addClient(TcpClient tcpClient)
+        internal static Client addClient(TcpClient tcpClient)
         {
             IPEndPoint ep = (IPEndPoint)tcpClient.Client.RemoteEndPoint;
             byte[] addressBytes = ep.Address.GetAddressBytes();
@@ -30,20 +30,19 @@ namespace server
             Client client = new Client(new ServerClient(0, addressBytes), tcpClient);
             clients.Add(client);
             byte id = (byte)clients.IndexOf(client);
-            clients[id].setClientId(id);
+            clients[id].ClientId = id;
             return clients[id];
         }
 
-        public static void removeClient(Client client)
+        internal static void removeClient(Client client)
         {
             if(!clients.Contains(client))
                 return;
-            //client.TcpClient.GetStream().Close();
             client.TcpClient.Close();
             clients.Remove(client);
         }
 
-        public static void removeAllClients()
+        internal static void removeAllClients()
         {
             foreach (Client client in clients)
             {
@@ -53,18 +52,18 @@ namespace server
                 }
                 catch(Exception e)
                 {
-
+                    ErrorMessage.show("exception while closing client:\r\n" + e.ToString());
                 }
             }
             clients.Clear();
         }
 
-        public static Client getClientByID(int id)
+        internal static Client getClientByID(int id)
         {
             return clients[id];
         }
 
-        public static void sendToAll(byte[] message)
+        internal static void sendToAll(byte[] message)
         {
             foreach (Client client in clients)
             {
@@ -72,7 +71,7 @@ namespace server
             }
         }
 
-        public static byte[] serializeAll()
+        internal static byte[] serializeAll()
         {
             byte[] resp = new byte[clients.Count * 5];
             int respIdx = 0;
