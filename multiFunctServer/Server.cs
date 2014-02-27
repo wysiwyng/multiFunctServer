@@ -126,7 +126,7 @@ namespace server
             }
             catch (SocketException e)
             {
-                ErrorMessage.show("exception in send thread, exception was:\r\n" + e.ToString());
+                ErrorMessage.show("SocketException in send thread, exception was:\r\n" + e.ToString());
             }
             finally
             {
